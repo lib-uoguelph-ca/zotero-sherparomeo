@@ -15,7 +15,7 @@ function get_zotero_items($zotero_user, $zotero_key, $type, $limit, $iterate ) {
     );
     
     if (!$iterate) {
-        $response = do_request($url_base, $params);
+        $response = do_request($url_base, 'items', $params);
         return get_items_from_response($response);    
     }
 
@@ -23,7 +23,7 @@ function get_zotero_items($zotero_user, $zotero_key, $type, $limit, $iterate ) {
     $page = 1;
     do {
         $params['start'] = ($page*$limit) + 1;
-        $response = do_request($url_base, $params);
+        $response = do_request($url_base, 'items', $params);
         $item_list = get_items_from_response($response);
         $items = array_merge($items, iterator_to_array($item_list));
 
@@ -33,17 +33,16 @@ function get_zotero_items($zotero_user, $zotero_key, $type, $limit, $iterate ) {
     return $items;
 }
 
-function do_request($url_base, $params) {
+function do_request($url_base, $endpoint, $params) {
 
     $client = new Zend\Http\Client();
-    $request_uri = "$url_base/items?" . http_build_query($params);
+    $request_uri = "$url_base/$endpoint?" . http_build_query($params);
     $client->setUri($request_uri);
     $response = $client->send();
 
-    //echo $response->getBody();
     if (200 != $response->getStatusCode()){
         $status_code = $response->getStatusCode();
-        throw new Exception("Failed to get items ($status_code).");
+        throw new Exception("API request failed with status code: $status_code.");
     }
 
     return $response; 
@@ -58,23 +57,37 @@ function get_items_from_response($response) {
     return $item_list;
 }
 
-if (( isset($argv[1])) && ( isset($argv[2]))){
-  $userid = $argv[1];
-  $zotero_key = $argv[2];
-  $sherpa_romeo_key = $argv[3];
-  $collection_type = $argv[4];
-  $limit = isset($argv[5]) && !empty($argv[5]) ? $argv[5] : 25;
-  $iterate = isset($argv[6]);
+function get_zotero_collections($zotero_user, $zotero_key, $type){
+    $url_base = "https://api.zotero.org/$type/$zotero_user";
+    
+    $params = array(
+        'key' => $zotero_key,
+    );
 
+    $response = do_request($url_base, 'collections', $params);
+    $collections = json_decode($response->getBody());
+    
+    return $collections;
+}
+
+if (( isset($argv[1])) && ( isset($argv[2]))){
+    $userid = $argv[1];
+    $zotero_key = $argv[2];
+    $sherpa_romeo_key = $argv[3];
+    $collection_type = $argv[4];
+    $limit = isset($argv[5]) && !empty($argv[5]) ? $argv[5] : 25;
+    $collection = isset($argv) && !empty($argv) ? $argv : null;
+    $iterate = isset($argv[6]);
 }
 else if (isset($_GET['userid'])){
     $userid = $_GET['userid'];
     $zotero_key = $_GET['zotero_key'];
     $sherpa_romeo_key = $_GET['sherpa_romeo_key'];
     $collection_type = $_GET['collection_type']; // 'group' or 'user'
+    $collection = isset($_GET['collection']) && !empty($_GET['collection']) ? $_GET['collection'] : null;
     $limit = isset($_GET['limit']) && !empty($_GET['limit']) ? $_GET['limit'] : 25; // limit to most recent, set to 25 by default.
     $iterate = isset($_GET['iterate']);
-  }
+}
 else {
     echo "Not enough parameters\n";
     usage();
