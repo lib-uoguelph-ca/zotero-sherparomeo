@@ -3,7 +3,7 @@
 require_once 'vendor/autoload.php';
 require_once('SherpaRomeo.php');
 
-function get_zotero_items($zotero_user, $zotero_key, $type, $limit, $iterate ) {
+function get_zotero_items($zotero_user, $zotero_key, $type, $collection_id, $limit, $iterate ) {
     $url_base = "https://api.zotero.org/$type/$zotero_user";
 
     $params = array(
@@ -13,9 +13,15 @@ function get_zotero_items($zotero_user, $zotero_key, $type, $limit, $iterate ) {
         'limit' => $limit,
         'sort' => 'dateModified'
     );
-    
+
+    $endpoint = 'items';
+
+    if (!empty($collection_id)) {
+        $endpoint = "collections/$collection_id/items";
+    }
+
     if (!$iterate) {
-        $response = do_request($url_base, 'items', $params);
+        $response = do_request($url_base, $endpoint, $params);
         return get_items_from_response($response);    
     }
 
@@ -23,7 +29,7 @@ function get_zotero_items($zotero_user, $zotero_key, $type, $limit, $iterate ) {
     $page = 1;
     do {
         $params['start'] = ($page*$limit) + 1;
-        $response = do_request($url_base, 'items', $params);
+        $response = do_request($url_base, $endpoint, $params);
         $item_list = get_items_from_response($response);
         $items = array_merge($items, iterator_to_array($item_list));
 
@@ -70,6 +76,19 @@ function get_zotero_collections($zotero_user, $zotero_key, $type){
     return $collections;
 }
 
+function get_collection_id($collections, $collection_name) {
+    $cols = array();
+    foreach($collections as $c) {
+        $cols[$c->data->name] = $c->data->key;
+    }
+
+    if ( isset($cols[$collection_name])) {
+        return $cols[$collection_name];
+    }
+
+    return null;
+}
+
 if (( isset($argv[1])) && ( isset($argv[2]))){
     $userid = $argv[1];
     $zotero_key = $argv[2];
@@ -102,9 +121,15 @@ else{
   $type ='users';
 }
 
+$collection_id = null;
+if(!empty($collection)) {
+    $collections = get_zotero_collections($userid, $zotero_key, $type);
+    $collection_id = get_collection_id($collections, $collection);
+}
+
 $item_list = array();
 try {
-    $item_list = get_zotero_items($userid, $zotero_key, $type, $limit, $iterate );
+    $item_list = get_zotero_items($userid, $zotero_key, $type, $collection_id, $limit, $iterate );
 }
 catch (Exception $e) {
     echo $e->getMessage();
