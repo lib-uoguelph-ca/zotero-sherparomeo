@@ -216,7 +216,7 @@ foreach ($item_list as $item){
 
 function usage(){
   echo "\n";
-  echo "zotero_sherpa.pbp [zotero_user] [zotero_key] [sherpa_romeo_key] [collection_type (user/group)] [limit (update most recent)] [iterate]";
+  echo "zotero_sherpa.pbp [zotero_user] [zotero_key] [sherpa_romeo_key] [collection_type (user/group)] [limit (update most recent)] [collection_name] [iterate]";
   echo "\n";
 }
 
