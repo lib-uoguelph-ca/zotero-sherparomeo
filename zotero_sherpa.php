@@ -183,13 +183,22 @@ foreach ($item_list as $item){
 	  if (strpos($content_json->extra , 'SherpaRomeo') !== false){
 		//if SherpaRomeo tags already exist in "extra" don't do anything.
 	  }
-	  else{
+      else {
+        $pub_name = $pub->getName();
+        $conditions = $pub->getConditions();
+
+        $extra = "Publisher: $pub_name\n\n";
+        $extra .= "#SherpaRomeo Pre: " . $pub->getPreArchiving() . "\n";
+        $extra .= "#SherpaRomeo Post: " . $pub->getPostArchiving() . "\n";
+        $extra .= "#SherpaRomeo PDF: " . $pub->getPdfArchiving() . "\n";
+        $extra .= "\n";
+        $extra .= "Conditions: \n";
+        $extra .= implode("\n", $conditions);
+
 		// prepend SherpaRomeo tags to existing content.
-		$content_json->extra = ' #SherpaRomeo Pre '.$pub->getPreArchiving() . '; #SherpaRomeo Post ' 
-		.$pub->getPreArchiving(). '; #SherpaRomeo PDF '.$pub->getPdfArchiving() . '; ' . $content_json->extra ;  
-	  
-		
-	  }
+		$content_json->extra = $extra; 
+      }
+
       $url_base = 'https://api.zotero.org/'.$type.'/'.$userid.'/';
       $client = new Zend\Http\Client();
       $client->setUri($url_base.'items/'.$item_key.'?key='.$zotero_key);
