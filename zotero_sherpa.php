@@ -21,7 +21,16 @@ function get_zotero_items($zotero_user, $zotero_key, $type, $collection_id, $lim
     }
 
     if (!$iterate) {
-        $response = do_request($url_base, $endpoint, $params);
+
+        try {
+            $response = do_request($url_base, $endpoint, $params);
+        }
+        catch (\Exception $e) {
+            $message = $e->getMessage();
+            echo "Error, Zotero API request to $url_base failed with message: $message";
+            die();
+        }
+
         return get_items_from_response($response);    
     }
 
@@ -29,7 +38,14 @@ function get_zotero_items($zotero_user, $zotero_key, $type, $collection_id, $lim
     $page = 1;
     do {
         $params['start'] = ($page*$limit) + 1;
-        $response = do_request($url_base, $endpoint, $params);
+        try {
+            $response = do_request($url_base, $endpoint, $params);
+        }
+        catch (\Exception $e) {
+            $message = $e->getMessage();
+            echo "Error, Zotero API request to $url_base failed with message: $message";
+            die();
+        }
         $item_list = get_items_from_response($response);
         $items = array_merge($items, iterator_to_array($item_list));
 
@@ -70,7 +86,15 @@ function get_zotero_collections($zotero_user, $zotero_key, $type){
         'key' => $zotero_key,
     );
 
-    $response = do_request($url_base, 'collections', $params);
+    try {
+        $response = do_request($url_base, 'collections', $params);
+    }
+    catch (\Exception $e) {
+        $message = $e->getMessage();
+        echo "Error, unable to list collections - Zotero API request to $url_base failed with message: $message";
+        die();
+    }
+
     $collections = json_decode($response->getBody());
     
     return $collections;
